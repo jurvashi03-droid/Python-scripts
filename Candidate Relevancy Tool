@@ -1,0 +1,58 @@
+import spacy
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Load NLP model
+nlp = spacy.load('en_core_web_sm')
+
+# Sample Inputs
+job_description = """
+We are looking for a Senior Director of Strategy with 10+ years of experience in corporate strategy, business development, and leadership roles in technology or consulting. Experience with AI/ML, cloud platforms, and stakeholder management is a plus.
+"""
+
+resumes = [
+    {
+        "name": "Candidate A",
+        "text": """
+        Seasoned strategy leader with 12 years in tech and consulting. Led corporate strategy at Amazon. Deep experience in AI/ML, cloud solutions, and cross-functional teams.
+        """
+    },
+    {
+        "name": "Candidate B",
+        "text": """
+        Marketing specialist with 8 years of experience in retail and e-commerce. Some exposure to cloud tools, but limited strategy background.
+        """
+    },
+    {
+        "name": "Candidate C",
+        "text": """
+        Strategic advisor with 15 years in business consulting. Extensive experience in stakeholder engagement, growth strategy, and cloud-based platforms.
+        """
+    }
+]
+
+# --- Function to Compute Similarity Score ---
+def compute_similarity(jd, resume_texts):
+    texts = [jd] + [r["text"] for r in resume_texts]
+    vectorizer = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = vectorizer.fit_transform(texts)
+
+    jd_vector = tfidf_matrix[0:1]
+    resume_vectors = tfidf_matrix[1:]
+
+    scores = cosine_similarity(jd_vector, resume_vectors).flatten()
+    
+    for i, score in enumerate(scores):
+        resume_texts[i]["similarity_score"] = round(score * 100, 2)
+
+    return resume_texts
+
+# Run matching
+scored_resumes = compute_similarity(job_description, resumes)
+
+# Sort by score
+sorted_resumes = sorted(scored_resumes, key=lambda x: x['similarity_score'], reverse=True)
+
+# Print results
+for r in sorted_resumes:
+    print(f"{r['name']} - Relevancy Score: {r['similarity_score']}%")
